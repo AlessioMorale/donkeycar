@@ -167,6 +167,12 @@ LED_PIN_R = 12
 LED_PIN_G = 10
 LED_PIN_B = 16
 
+#WS2812 leds on a usb LittleWire board
+HAVE_SMART_LEDS = False         #do you have a WS2812 connected to a littlewire board(https://littlewire.github.io/)? 
+SMART_LED_LEN = 4               # number of leds in the strip
+SMART_LED_PIN = 1               # littlewire pin number
+
+
 #LED status color, 0-100
 LED_R = 0
 LED_G = 0
