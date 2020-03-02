@@ -126,8 +126,9 @@ class SMART_LEDS:
             self.toggle(True)
 
     def set_rgb(self, r, g, b):
+        color = [r, g, b]
+        color = [max(min( int(x * 255.0/100.0), 255), 0) for x in color]
         for i in range(self.stringlen):
-            color = (r, g, b)
             self.ledstatus[i] = color
         self.update_leds()
 
