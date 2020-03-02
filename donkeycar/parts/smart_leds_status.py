@@ -41,6 +41,10 @@ VENDOR_ID = 0x1781
 PRODUCT_ID = 0x0C9F
 USB_TIMEOUT = 1
 RX_BUFFER_SIZE = 64
+# Minumum interval between updates
+# If you see something like 'WARN Event TRB for slot 3 ep 0 with no TDs queued?'
+# in your kernel.log then try to slightly raise this value
+MIN_UPDATE_INTERVAL = 0.001
 
 # Code ------------------------------------------------------------------------
 
@@ -54,9 +58,13 @@ class device:
         
         if self.lw == None:
             raise ValueError('Device not Found!')
-        self.lw.reset()
-        time.sleep(1)
-        self.lw.set_configuration()
+        try:
+            self.lw.set_configuration()
+        except:
+            # most of the times reset recover the device from some inconsistent state
+            self.lw.reset()
+            time.sleep(1)
+            self.lw.set_configuration()
         
     def readFirmwareVersion(self):
         """Returns littleWire firmware version"""
@@ -83,6 +91,7 @@ class SMART_LEDS:
     Good for LED pwm modulated
     '''
     def __init__(self, stringlen, pin):
+        self.last_execution = time.time()
         self.lw = device()
         self.blink_changed = 0
         self.on = False
@@ -101,6 +110,10 @@ class SMART_LEDS:
 
     def update_leds(self, zero=False):
         try:
+            #ensure the attiny has finished processing the last update
+            remaining =  MIN_UPDATE_INTERVAL - (time.time() - self.last_execution)
+            if(remaining > 0):
+                time.sleep(remaining)
             for color in self.ledstatus:
                 if zero:
                     self.on = False
@@ -111,6 +124,7 @@ class SMART_LEDS:
             self.lw.ws2812_flush(self.pin)
         except usb.core.USBError:
             pass
+        self.last_execution = time.time()
 
     def blink(self, rate):
         if time.time() - self.blink_changed > rate:
