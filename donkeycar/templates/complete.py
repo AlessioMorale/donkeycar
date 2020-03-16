@@ -213,6 +213,7 @@ def drive(cfg, model_path=None, use_joystick=False, model_type=None, camera_type
             return 0
 
     have_leds = False
+    leds_threaded = False 
     if cfg.HAVE_RGB_LED and not cfg.DONKEY_GYM:
         from donkeycar.parts.led_status import RGB_LED
         led = RGB_LED(cfg.LED_PIN_R, cfg.LED_PIN_G, cfg.LED_PIN_B, cfg.LED_INVERT)
@@ -224,11 +225,12 @@ def drive(cfg, model_path=None, use_joystick=False, model_type=None, camera_type
         led = SMART_LEDS(cfg.SMART_LED_LEN, cfg.SMART_LED_PIN)
         led.set_rgb(cfg.LED_R, cfg.LED_G, cfg.LED_B)        
         have_leds = True
+        leds_threaded = True
     if have_leds:
         V.add(LedConditionLogic(cfg), inputs=['user/mode', 'recording', "records/alert", 'behavior/state', 'modelfile/modified', "pilot/loc"],
               outputs=['led/blink_rate'])
 
-        V.add(led, inputs=['led/blink_rate'])
+        V.add(led, inputs=['led/blink_rate'], threaded=leds_threaded)
 
     def get_record_alert_color(num_records):
         col = (0, 0, 0)

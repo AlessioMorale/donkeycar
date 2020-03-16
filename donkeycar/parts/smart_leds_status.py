@@ -95,6 +95,8 @@ class SMART_LEDS:
         self.lw = device()
         self.blink_changed = 0
         self.on = False
+        self.running = True
+        self.force_off = False
 
         self.pin = pin
         self.stringlen = stringlen
@@ -106,15 +108,16 @@ class SMART_LEDS:
         self.update_leds()        
 
     def toggle(self, condition):
-        self.update_leds(not condition)
+        self.force_off = not condition
 
     def update_leds(self, zero=False):
         try:
+            ledcopy = self.ledstatus
             #ensure the attiny has finished processing the last update
             remaining =  MIN_UPDATE_INTERVAL - (time.time() - self.last_execution)
             if(remaining > 0):
                 time.sleep(remaining)
-            for color in self.ledstatus:
+            for color in ledcopy:
                 if zero:
                     self.on = False
                     self.lw.ws2812_preload(0, 0, 0)
@@ -131,7 +134,11 @@ class SMART_LEDS:
             self.toggle(not self.on)
             self.blink_changed = time.time()
 
-    def run(self, blink_rate):
+    def run(self):
+        if not self.on:
+            self.on = True
+
+    def run_threaded(self, blink_rate):
         if blink_rate == 0:
             self.toggle(False)
         elif blink_rate > 0:
@@ -139,16 +146,20 @@ class SMART_LEDS:
         else:
             self.toggle(True)
 
+    def update(self):
+        while(self.running):
+            self.update_leds(self.force_off)
+            time.sleep(0.05)
+
     def set_rgb(self, r, g, b):
         color = [r, g, b]
         color = [max(min( int(x * 255.0/100.0), 255), 0) for x in color]
         for i in range(self.stringlen):
             self.ledstatus[i] = color
-        self.update_leds()
-
     
     def shutdown(self):
         self.toggle(False)
+        self.running = False
 
 
 if __name__ == "__main__":
